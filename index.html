@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>Free Market</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
+        <script src="./cards.js"></script>
+        <script src="./storage.js"></script>
+        <script src="./chart_options.js"></script>
+    </head>
+    <body id="app">
+
+        <div id="app" class="flex">
+            <button @click="this.downtick()">- {{ bull }}</button>
+            {{ current_price }}
+            <button @click="this.uptick()">+ {{ bear }}</button>
+            <button @click="flip()">Random Flip</button>
+            <br><br>
+            <!-- TODO dropdown with list of cards -->
+            <button @click="play_card({ ...this.CARDS[1] })">Bear</button>
+            <button @click="play_card({ ...this.CARDS[0] })">Bull</button>
+            <!-- TODO maybe modal -->
+
+            <ul>
+                <li v-for="card in current_cards">
+                    {{ card.name }}: Rounds remaining: {{ card.round_played + card.rounds - current_round }}
+                </li>
+            </ul>
+            <button :disabled="is_market_open" @click="open_market()">Open Market</button>
+            <button :disabled="!is_market_open" @click="close_market()">Close Market</button>
+            <p>Round {{current_round}}</p>
+            <p>Current round {{ display_time_current_round }}</p>
+            <p>Full game {{ display_time_full_game }}</p>
+
+            <button @click="is_settings_open = !is_settings_open">Settings</button>
+            <div v-if="is_settings_open">
+                <br>
+                <input id="time-autoplay" type="checkbox" v-model="is_time_autoplay"/>
+                <label for="time-autoplay">Time Autoplay: Rounds last a specific amount of time</label>
+                <br>
+                <input type="text" v-model="time_autoplay" :disabled="!is_time_autoplay" /> seconds
+                <br><br>
+                <input id="flip-autoplay" type="checkbox" v-model="is_flip_autoplay"/>
+                <label for="flip-autoplay">Flip Autoplay: Does one random coin flip every {{ flip_autoplay }} seconds</label>
+                <br>
+                <input type="text" v-model="flip_autoplay" :disabled="!is_flip_autoplay" /> seconds
+
+                <!-- <button @click="restart_game()">Restart Game</button> -->
+                <!-- Save / Load -->
+            </div>
+
+            <!-- TODO style -->
+            <!-- TODO localstorage, save/load - refresh keeps memory -->
+
+            <br><br>
+            <div id="price-chart"></div>
+        </div>
+
+        <script>
+        Vue.createApp({
+            data() {
+                const data = {
+                    current_price: 100,
+                    bull: 1,
+                    bear: 1,
+                    history_price: [],
+                    
+                    is_market_open: false,
+                    current_round: 0,
+                    
+                    time_full_game: 0,
+                    time_current_round: 0,
+                    counter_current_round: 0,
+                    
+                    current_cards: [],
+                    CARDS,
+                    
+                    is_settings_open: false,
+                    is_time_autoplay: false,
+                    time_autoplay: 60,
+                    is_flip_autoplay: false,
+                    flip_autoplay: 10,
+                }
+                data["_keys"] = Object.keys(data)
+                data["price_chart"] = null  // Keep this outside _keys (its not json serializable)
+                return data
+            },
+            computed: {
+                display_time_current_round() {
+                    return new Date(this.time_current_round).toISOString().substr(11, 8)
+                },
+                display_time_full_game() {
+                    return new Date(this.time_full_game).toISOString().substr(11, 8)
+                },
+            },
+            methods: {
+                flip() {
+                    if (Math.random() > 0.5) {
+                        this.uptick()
+                    } else {
+                        this.downtick()
+                    }
+                },
+                uptick() {
+                    this.current_price += this.bull
+                    this.log_price()
+                },
+                downtick() {
+                    this.current_price -= this.bear
+                    this.log_price()
+                },
+                log_price() {
+                    if (!this.is_market_open) return
+
+                    const last_data = this.history_price[this.history_price.length-1]
+                    if (last_data && this.current_round === last_data.x) {
+                        last_data.y[3] = this.current_price  // Set close price
+                        if (this.current_price > last_data.y[1]) {
+                            last_data.y[1] = this.current_price  // Set high price
+                        } else if (this.current_price < last_data.y[2]) {
+                            last_data.y[2] = this.current_price  // Set low price
+                        }
+                    } else {
+                        this.history_price.push({
+                            x: this.current_round,
+                            y: [this.current_price, this.current_price, this.current_price, this.current_price,]
+                        })
+                    }
+                    this.price_chart.updateSeries([{
+                        name: 'price',
+                        data: this.history_price,
+                    }])
+                },
+                play_card(card) {
+                    card.play(this)
+                    card.round_played = this.current_round
+                    this.current_cards.push(card)
+                },
+                open_market() {
+                    if (!this.is_market_open) {
+                        this.is_market_open = true
+                        this.current_round++
+
+                        this.time_current_round = 0
+                        this.counter_current_round = setInterval(() => {
+                            this.time_current_round += 1000
+
+                            if (this.is_time_autoplay) {
+                                if (this.time_current_round === this.time_autoplay*1000) {
+                                    this.close_market()
+                                }
+                            }
+                            if (this.is_flip_autoplay) {
+                                if (this.time_current_round % (this.flip_autoplay*1000) === 0) {
+                                    this.flip()
+                                }
+                            }
+                        }, 1000)
+                    }
+                },
+                close_market() {
+                    if (this.is_market_open) {
+                        this.is_market_open = false
+
+                        clearTimeout(this.counter_current_round)
+
+                        for (let c = this.current_cards.length-1; c >= 0; c--) {
+                            const card = this.current_cards[c]
+                            if (card.round_played + card.rounds <= this.current_round) {
+                                card.unplay(this)
+                                this.current_cards.splice(c, 1)
+                            }
+                        }
+                    }
+                },
+            },
+            mounted() {
+                setInterval(() => {
+                    this.time_full_game += 1000
+                    autosave(this)
+                }, 1000)
+
+                this.price_chart = new ApexCharts(document.getElementById("price-chart"), chart_options)
+                this.price_chart.render()
+            },
+        }).mount('#app')
+        </script>
+
+        <!-- <style>
+            body {
+                color: #aaa;
+                background-color: #222;
+            }
+        </style> -->
+    </body>
+</html>
