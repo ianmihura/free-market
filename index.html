@@ -6,14 +6,14 @@
         <title>Free Market</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
         <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
         <script src="./cards.js"></script>
         <script src="./storage.js"></script>
         <script src="./chart_options.js"></script>
     </head>
-    <body id="app">
-
-        <div id="app" class="flex">
+    <body>
+        <div id="app">
             <button @click="this.downtick()">- {{ bull }}</button>
             {{ current_price }}
             <button @click="this.uptick()">+ {{ bear }}</button>
@@ -22,6 +22,7 @@
             <!-- TODO dropdown with list of cards -->
             <button @click="play_card({ ...this.CARDS[1] })">Bear</button>
             <button @click="play_card({ ...this.CARDS[0] })">Bull</button>
+            <button @click="play_card({ ...this.CARDS[2] })">Frenzy</button>
             <!-- TODO maybe modal -->
 
             <ul>
@@ -51,14 +52,14 @@
                 <!-- <button @click="restart_game()">Restart Game</button> -->
                 <!-- Save / Load -->
             </div>
-
-            <!-- TODO style -->
-            <!-- TODO localstorage, save/load - refresh keeps memory -->
-
             <br><br>
+            
             <div id="price-chart"></div>
         </div>
 
+        <!-- TODO style -->
+        <!-- TODO save/load - refresh keeps memory -->
+        
         <script>
         Vue.createApp({
             data() {
@@ -195,5 +196,8 @@
                 background-color: #222;
             }
         </style> -->
+        <!-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js" integrity="sha384-RuyvpeZCxMJCqVUGFI0Do1mQrods/hhxYlcVfGPOfQtPJh0JCw12tUAZ/Mv10S7D" crossorigin="anonymous"></script> -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
     </body>
 </html>
